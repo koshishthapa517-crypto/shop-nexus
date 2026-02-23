@@ -93,8 +93,8 @@ export default function AdminOrdersPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Admin - Orders</h1>
+      <div className="p-8">
+        <h1 className="text-3xl font-bold mb-8">Orders Management</h1>
         <p className="text-gray-500">Loading orders...</p>
       </div>
     );
@@ -102,8 +102,8 @@ export default function AdminOrdersPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Admin - Orders</h1>
+      <div className="p-8">
+        <h1 className="text-3xl font-bold mb-8">Orders Management</h1>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -118,8 +118,8 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin - Orders</h1>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-8">Orders Management</h1>
       
       {orders.length === 0 ? (
         <div className="text-center py-12">

@@ -69,8 +69,8 @@ export default function AdminProductsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Admin - Products</h1>
+      <div className="p-8">
+        <h1 className="text-3xl font-bold mb-8">Products Management</h1>
         <p className="text-gray-500">Loading products...</p>
       </div>
     );
@@ -78,8 +78,8 @@ export default function AdminProductsPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Admin - Products</h1>
+      <div className="p-8">
+        <h1 className="text-3xl font-bold mb-8">Products Management</h1>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -94,9 +94,9 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin - Products</h1>
+        <h1 className="text-3xl font-bold">Products Management</h1>
         <Link
           href="/admin/products/new"
           className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700 font-semibold"

@@ -18,22 +18,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Redirect admin users to admin panel from protected routes
+  if (token.role === 'ADMIN' && !pathname.startsWith('/admin')) {
+    // Allow access to API routes
+    if (!pathname.startsWith('/api')) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+  }
+
   // Check admin routes
   if (pathname.startsWith('/admin')) {
     if (token.role !== 'ADMIN') {
-      // Return 403 Forbidden for non-admin users
-      return new NextResponse(
-        JSON.stringify({
-          error: 'Forbidden',
-          message: 'Admin access required',
-        }),
-        {
-          status: 403,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Redirect non-admin users to products page
+      return NextResponse.redirect(new URL('/products', request.url));
     }
   }
 
