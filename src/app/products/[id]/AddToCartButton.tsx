@@ -16,21 +16,24 @@ export default function AddToCartButton({ productId, isOutOfStock }: AddToCartBu
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleAddToCart = async () => {
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
       if (!session) {
         // Add to guest cart (localStorage)
         guestCartService.addItem(productId, quantity);
-        alert('Product added to cart! Sign in to checkout.');
-        router.push('/cart');
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 2000);
+        setLoading(false);
         return;
       }
 
-      // Add to user's cart (database)
+      // Add to database cart for authenticated users
       const res = await fetch('/api/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,8 +46,10 @@ export default function AddToCartButton({ productId, isOutOfStock }: AddToCartBu
         throw new Error(data.message || 'Failed to add to cart');
       }
 
-      alert('Product added to cart successfully!');
-      router.push('/cart');
+      // Trigger cart update event for navigation badge
+      window.dispatchEvent(new Event('cartUpdated'));
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Add to cart error:', err);
@@ -73,6 +78,12 @@ export default function AddToCartButton({ productId, isOutOfStock }: AddToCartBu
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          ✓ Added to cart successfully!
         </div>
       )}
 

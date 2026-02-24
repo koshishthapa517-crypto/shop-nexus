@@ -12,8 +12,8 @@ export const createOrderSchema = z.object({
 });
 
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(['PENDING', 'PAID'], {
-    message: 'Status must be either PENDING or PAID',
+  status: z.enum(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'], {
+    message: 'Status must be one of: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED',
   }),
 });
 

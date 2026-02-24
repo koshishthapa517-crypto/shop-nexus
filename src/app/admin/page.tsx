@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Package, ShoppingBag, TrendingUp, DollarSign } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, IndianRupee } from 'lucide-react';
 
 interface DashboardStats {
   totalProducts: number;
@@ -74,8 +74,8 @@ export default function AdminDashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `$${stats.totalRevenue.toFixed(2)}`,
-      icon: DollarSign,
+      value: `Rs. ${stats.totalRevenue.toFixed(2)}`,
+      icon: IndianRupee,
       color: 'bg-purple-500',
       link: '/admin/orders',
     },

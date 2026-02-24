@@ -10,8 +10,8 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Check if user is authenticated for protected routes (cart, orders)
-  if (pathname.startsWith('/cart') || pathname.startsWith('/orders')) {
+  // Check if user is authenticated for protected routes (orders only - cart is now public)
+  if (pathname.startsWith('/orders')) {
     if (!token) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
@@ -33,8 +33,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect admin users to admin panel from protected routes (except products)
-  if (token && token.role === 'ADMIN' && !pathname.startsWith('/admin') && !pathname.startsWith('/api') && !pathname.startsWith('/products')) {
+  // Redirect admin users to admin panel from protected routes (except products and cart)
+  if (token && token.role === 'ADMIN' && !pathname.startsWith('/admin') && !pathname.startsWith('/api') && !pathname.startsWith('/products') && !pathname.startsWith('/cart')) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 

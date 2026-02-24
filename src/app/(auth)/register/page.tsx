@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl');
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +21,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      console.log('Submitting registration...');
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
@@ -26,6 +31,7 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
+      console.log('Registration response:', response.status, data);
 
       if (!response.ok) {
         if (data.details) {
@@ -39,13 +45,47 @@ export default function RegisterPage() {
           // General error
           setErrors({ general: data.message || 'Registration failed' });
         }
+        setIsLoading(false);
+        return;
+      }
+
+      // Success - auto login
+      console.log('Registration successful, attempting auto-login...');
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      console.log('Auto-login result:', result);
+
+      if (result?.ok) {
+        // Fetch session to get user role
+        const sessionResponse = await fetch('/api/auth/session');
+        const session = await sessionResponse.json();
+        
+        // Redirect based on role if no callback URL
+        if (callbackUrl) {
+          console.log('Redirecting to callback URL:', callbackUrl);
+          router.push(callbackUrl);
+        } else if (session?.user?.role === 'ADMIN') {
+          console.log('Admin user, redirecting to admin dashboard');
+          router.push('/admin');
+        } else {
+          console.log('Regular user, redirecting to products');
+          router.push('/products');
+        }
+        
+        router.refresh();
       } else {
-        // Success - redirect to login
-        router.push('/login');
+        // If auto-login fails, redirect to login page
+        console.log('Auto-login failed, redirecting to login page');
+        const redirectUrl = callbackUrl || (data.role === 'ADMIN' ? '/admin' : '/products');
+        router.push(`/login?callbackUrl=${encodeURIComponent(redirectUrl)}`);
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setErrors({ general: 'An unexpected error occurred' });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -91,6 +131,7 @@ export default function RegisterPage() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -134,7 +175,10 @@ export default function RegisterPage() {
           </div>
           <div className="text-center text-sm">
             <span className="text-gray-600">Already have an account? </span>
-            <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <a 
+              href={callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               Sign in
             </a>
           </div>

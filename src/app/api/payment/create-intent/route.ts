@@ -3,9 +3,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/core/lib/auth';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-});
+const PAYMENT_MODE = process.env.PAYMENT_MODE || 'stripe';
+
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    })
+  : null;
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -27,7 +31,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a PaymentIntent with Stripe
+    // Mock payment mode for testing
+    if (PAYMENT_MODE === 'mock') {
+      console.log('Mock payment mode: Creating mock payment intent');
+      return NextResponse.json({
+        clientSecret: `mock_secret_${orderId}`,
+        paymentIntentId: `mock_pi_${orderId}`,
+        mockMode: true,
+      });
+    }
+
+    // Real Stripe payment
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Configuration Error', message: 'Stripe is not configured. Set STRIPE_SECRET_KEY or use PAYMENT_MODE=mock' },
+        { status: 500 }
+      );
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to smallest currency unit (paise for INR)
       currency: 'inr',

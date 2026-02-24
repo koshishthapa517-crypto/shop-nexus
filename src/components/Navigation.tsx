@@ -3,12 +3,47 @@
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { Bell, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { guestCartService } from '@/core/lib/guestCart';
 
 export default function Navigation() {
   const { data: session, status } = useSession();
   const isLoading = status === 'loading';
   const [searchQuery, setSearchQuery] = useState('');
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    // Update cart count
+    const updateCartCount = async () => {
+      if (session) {
+        // Fetch authenticated user's cart count
+        try {
+          const res = await fetch('/api/cart');
+          if (res.ok) {
+            const items = await res.json();
+            setCartCount(items.reduce((sum: number, item: any) => sum + item.quantity, 0));
+          }
+        } catch (error) {
+          console.error('Failed to fetch cart count:', error);
+        }
+      } else {
+        // Get guest cart count from localStorage
+        setCartCount(guestCartService.getItemCount());
+      }
+    };
+
+    updateCartCount();
+
+    // Listen for cart updates
+    const handleCartUpdate = () => updateCartCount();
+    window.addEventListener('guestCartUpdated', handleCartUpdate);
+    window.addEventListener('cartUpdated', handleCartUpdate);
+
+    return () => {
+      window.removeEventListener('guestCartUpdated', handleCartUpdate);
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, [session]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,8 +105,13 @@ export default function Navigation() {
                 <button className="text-gray-900 hover:text-black">
                   <Bell size={20} />
                 </button>
-                <Link href="/cart" className="text-gray-900 hover:text-black">
+                <Link href="/cart" className="text-gray-900 hover:text-black relative">
                   <ShoppingCart size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
                 </Link>
                 <span className="text-sm text-gray-900">{session.user.name}</span>
                 <button
@@ -83,6 +123,14 @@ export default function Navigation() {
               </>
             ) : (
               <>
+                <Link href="/cart" className="text-gray-900 hover:text-black relative">
+                  <ShoppingCart size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </Link>
                 <Link
                   href="/login"
                   className="px-4 py-2 text-sm font-medium text-gray-900 hover:text-black border border-gray-300 rounded-md"

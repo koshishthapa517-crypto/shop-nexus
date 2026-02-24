@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { guestCartService } from '@/core/lib/guestCart';
 import GuestCartView from './GuestCartView';
 
 interface Product {
@@ -31,10 +30,32 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [placingOrder, setPlacingOrder] = useState(false);
-  const [mergingCart, setMergingCart] = useState(false);
+
+  // Show guest cart for unauthenticated users
+  if (status === 'unauthenticated') {
+    return <GuestCartView />;
+  }
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     fetchCart();
+    
+    // Listen for cart updates (from merge or other operations)
+    const handleCartUpdate = () => fetchCart();
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
   }, []);
 
   const fetchCart = async () => {

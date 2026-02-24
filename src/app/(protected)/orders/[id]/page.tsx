@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/core/lib/auth';
+import { orderService } from '@/core/services/order.service';
 import Link from 'next/link';
 
 interface Product {
@@ -30,36 +31,39 @@ interface Order {
   items: OrderItem[];
 }
 
-async function getOrder(id: string): Promise<Order | null> {
+async function getOrder(id: string, userId: string, userRole: string): Promise<Order | null> {
+  try {
+    const order = await orderService.getOrderById(id);
+
+    if (!order) {
+      return null;
+    }
+
+    // Check if user owns the order or is admin
+    if (order.userId !== userId && userRole !== 'ADMIN') {
+      return null;
+    }
+
+    return order as Order;
+  } catch (error) {
+    console.error('Failed to fetch order:', error);
+    return null;
+  }
+}
+
+export default async function OrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
     redirect('/login');
   }
 
-  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${id}`, {
-    cache: 'no-store',
-    headers: {
-      Cookie: `next-auth.session-token=${session}`,
-    },
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) {
-      return null;
-    }
-    throw new Error('Failed to fetch order');
-  }
-
-  return res.json();
-}
-
-export default async function OrderDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const order = await getOrder(params.id);
+  const { id } = await params;
+  const order = await getOrder(id, session.user.id, session.user.role);
 
   if (!order) {
     notFound();

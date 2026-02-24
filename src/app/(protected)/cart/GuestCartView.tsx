@@ -24,7 +24,7 @@ export default function GuestCartView() {
 
   useEffect(() => {
     loadGuestCart();
-
+    
     // Listen for cart updates
     const handleCartUpdate = () => loadGuestCart();
     window.addEventListener('guestCartUpdated', handleCartUpdate);
@@ -37,8 +37,6 @@ export default function GuestCartView() {
   const loadGuestCart = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
       const guestItems = guestCartService.getCart();
       
       if (guestItems.length === 0) {
@@ -56,11 +54,10 @@ export default function GuestCartView() {
               const product = await res.json();
               return { ...item, product };
             }
-            return item;
           } catch (err) {
             console.error(`Failed to fetch product ${item.productId}:`, err);
-            return item;
           }
+          return item;
         })
       );
 
@@ -91,6 +88,10 @@ export default function GuestCartView() {
 
   const calculateTotal = () => {
     return cartItems.reduce((sum, item) => sum + calculateSubtotal(item), 0);
+  };
+
+  const handleCheckout = () => {
+    router.push('/login?callbackUrl=/cart');
   };
 
   if (loading) {
@@ -133,29 +134,11 @@ export default function GuestCartView() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
-
-      {/* Guest user notice */}
-      <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-6">
-        <p className="font-medium">Sign in to checkout</p>
-        <p className="text-sm mt-1">
-          Your items are saved locally. Sign in to complete your purchase.
-        </p>
-        <div className="mt-3 flex gap-3">
-          <button
-            onClick={() => router.push('/login?callbackUrl=/cart')}
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm"
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => router.push('/register?callbackUrl=/cart')}
-            className="border border-blue-600 text-blue-600 py-2 px-4 rounded hover:bg-blue-50 text-sm"
-          >
-            Create Account
-          </button>
-        </div>
-      </div>
       
+      <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-6">
+        <p className="font-medium">Sign in to checkout and save your cart</p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="space-y-4">
@@ -163,7 +146,7 @@ export default function GuestCartView() {
               if (!item.product) {
                 return (
                   <div key={item.productId} className="border rounded-lg p-4 shadow-sm bg-gray-50">
-                    <p className="text-gray-500">Product not found</p>
+                    <p className="text-gray-500">Product not available</p>
                     <button
                       onClick={() => removeItem(item.productId)}
                       className="text-red-600 hover:text-red-800 text-sm mt-2"
@@ -257,7 +240,7 @@ export default function GuestCartView() {
             </div>
             
             <button
-              onClick={() => router.push('/login?callbackUrl=/cart')}
+              onClick={handleCheckout}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-semibold"
             >
               Sign In to Checkout

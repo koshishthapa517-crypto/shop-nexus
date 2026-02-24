@@ -5,13 +5,131 @@ import { useParams, useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
+
+const PAYMENT_MODE = process.env.NEXT_PUBLIC_PAYMENT_MODE || 'stripe';
 
 interface Order {
   id: string;
   totalAmount: number;
   status: string;
   paymentStatus: string;
+}
+
+// Mock Payment Form Component
+function MockPaymentForm({ orderId, amount }: { orderId: string; amount: number }) {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvc, setCvc] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    // Simulate payment processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    try {
+      console.log('Confirming payment for order:', orderId);
+      const res = await fetch('/api/payment/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          paymentIntentId: `mock_pi_${orderId}`,
+        }),
+      });
+
+      const data = await res.json();
+      console.log('Payment confirmation response:', res.status, data);
+
+      if (res.ok) {
+        console.log('Payment successful, redirecting to order page...');
+        // Trigger cart update to clear badge
+        window.dispatchEvent(new Event('cartUpdated'));
+        router.push(`/orders/${orderId}?payment=success`);
+      } else {
+        console.error('Payment confirmation failed:', data);
+        alert(`Payment confirmation failed: ${data.message || 'Unknown error'}`);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error('Payment confirmation error:', err);
+      alert('Payment confirmation failed. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4">
+        <p className="font-medium">Mock Payment Mode</p>
+        <p className="text-sm">This is a test payment. Enter any card details.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Card Number
+        </label>
+        <input
+          type="text"
+          placeholder="4242 4242 4242 4242"
+          value={cardNumber}
+          onChange={(e) => setCardNumber(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Expiry Date
+          </label>
+          <input
+            type="text"
+            placeholder="MM/YY"
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            CVC
+          </label>
+          <input
+            type="text"
+            placeholder="123"
+            value={cvc}
+            onChange={(e) => setCvc(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pt-4 border-t">
+        <div>
+          <p className="text-sm text-gray-600">Total Amount</p>
+          <p className="text-2xl font-bold text-gray-900">Rs. {amount.toFixed(2)}</p>
+        </div>
+        
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+        >
+          {isLoading ? 'Processing...' : 'Pay Now'}
+        </button>
+      </div>
+    </form>
+  );
 }
 
 function CheckoutForm({ orderId, amount }: { orderId: string; amount: number }) {
@@ -42,6 +160,7 @@ function CheckoutForm({ orderId, amount }: { orderId: string; amount: number }) 
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
       // Confirm payment on backend
       try {
+        console.log('Payment succeeded, confirming with backend...');
         const res = await fetch('/api/payment/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -51,13 +170,21 @@ function CheckoutForm({ orderId, amount }: { orderId: string; amount: number }) 
           }),
         });
 
+        const data = await res.json();
+        console.log('Payment confirmation response:', res.status, data);
+
         if (res.ok) {
+          console.log('Payment confirmed, redirecting...');
+          // Trigger cart update to clear badge
+          window.dispatchEvent(new Event('cartUpdated'));
           router.push(`/orders/${orderId}?payment=success`);
         } else {
-          setMessage('Payment confirmation failed. Please contact support.');
+          console.error('Payment confirmation failed:', data);
+          setMessage(`Payment confirmation failed: ${data.message || 'Please contact support.'}`);
           setIsLoading(false);
         }
       } catch (err) {
+        console.error('Payment confirmation error:', err);
         setMessage('Payment confirmation failed. Please contact support.');
         setIsLoading(false);
       }
@@ -103,10 +230,18 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchOrderAndCreateIntent();
+    if (orderId) {
+      fetchOrderAndCreateIntent();
+    }
   }, [orderId]);
 
   const fetchOrderAndCreateIntent = async () => {
+    if (!orderId) {
+      setError('Order ID is missing');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -188,10 +323,16 @@ export default function CheckoutPage() {
         <p className="text-gray-600 mb-8">Order #{order.id.slice(0, 8)}</p>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          {clientSecret && (
+          {PAYMENT_MODE === 'mock' ? (
+            <MockPaymentForm orderId={orderId} amount={Number(order.totalAmount)} />
+          ) : clientSecret && stripePromise ? (
             <Elements options={options} stripe={stripePromise}>
               <CheckoutForm orderId={orderId} amount={Number(order.totalAmount)} />
             </Elements>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-red-600">Payment system not configured</p>
+            </div>
           )}
         </div>
 

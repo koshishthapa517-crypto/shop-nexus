@@ -1,11 +1,14 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,7 +29,20 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Invalid email or password');
       } else if (result?.ok) {
-        router.push('/products');
+        // Fetch session to get user role
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
+        
+        // Redirect based on role if no callback URL
+        if (callbackUrl) {
+          router.push(callbackUrl);
+        } else if (session?.user?.role === 'ADMIN') {
+          router.push('/admin');
+        } else {
+          router.push('/products');
+        }
+        
+        router.refresh();
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -58,6 +74,7 @@ export default function LoginPage() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

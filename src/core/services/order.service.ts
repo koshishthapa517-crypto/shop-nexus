@@ -153,6 +153,13 @@ export const orderService = {
             product: true,
           },
         },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
     });
   },

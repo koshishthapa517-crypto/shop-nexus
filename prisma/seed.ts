@@ -165,14 +165,20 @@ async function main() {
     },
   ];
 
-  // Delete existing products to ensure clean seed
-  await prisma.product.deleteMany({});
-
-  // Create products
+  // Create products if they don't exist
   for (const product of products) {
-    await prisma.product.create({
-      data: product,
+    const existing = await prisma.product.findFirst({
+      where: { name: product.name },
     });
+    
+    if (!existing) {
+      await prisma.product.create({
+        data: product,
+      });
+      console.log(`Created product: ${product.name}`);
+    } else {
+      console.log(`Product already exists: ${product.name}`);
+    }
   }
 
   console.log(`Created ${products.length} products`);
