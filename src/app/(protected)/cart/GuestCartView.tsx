@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { guestCartService } from '@/core/lib/guestCart';
-import GuestCartView from './GuestCartView';
+import { guestCartService, GuestCartItem } from '@/core/lib/guestCart';
 
 interface Product {
   id: string;
@@ -14,136 +12,80 @@ interface Product {
   stock: number;
 }
 
-interface CartItem {
-  id: string;
-  userId: string;
-  productId: string;
-  quantity: number;
-  createdAt: string;
-  product: Product;
+interface GuestCartItemWithProduct extends GuestCartItem {
+  product?: Product;
 }
 
-export default function CartPage() {
+export default function GuestCartView() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<GuestCartItemWithProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
-  const [placingOrder, setPlacingOrder] = useState(false);
-  const [mergingCart, setMergingCart] = useState(false);
 
   useEffect(() => {
-    fetchCart();
+    loadGuestCart();
+
+    // Listen for cart updates
+    const handleCartUpdate = () => loadGuestCart();
+    window.addEventListener('guestCartUpdated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('guestCartUpdated', handleCartUpdate);
+    };
   }, []);
 
-  const fetchCart = async () => {
+  const loadGuestCart = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/cart');
       
-      if (!res.ok) {
-        throw new Error('Failed to fetch cart');
+      const guestItems = guestCartService.getCart();
+      
+      if (guestItems.length === 0) {
+        setCartItems([]);
+        setLoading(false);
+        return;
       }
-      
-      const data = await res.json();
-      setCartItems(data);
+
+      // Fetch product details for each item
+      const itemsWithProducts = await Promise.all(
+        guestItems.map(async (item) => {
+          try {
+            const res = await fetch(`/api/products/${item.productId}`);
+            if (res.ok) {
+              const product = await res.json();
+              return { ...item, product };
+            }
+            return item;
+          } catch (err) {
+            console.error(`Failed to fetch product ${item.productId}:`, err);
+            return item;
+          }
+        })
+      );
+
+      setCartItems(itemsWithProducts);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Failed to load cart');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
+  const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
-    setUpdatingItems(prev => new Set(prev).add(itemId));
-    
-    try {
-      const res = await fetch(`/api/cart/${itemId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity: newQuantity }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to update quantity');
-      }
-      
-      const updatedItem = await res.json();
-      setCartItems(prev =>
-        prev.map(item => (item.id === itemId ? updatedItem : item))
-      );
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update quantity');
-    } finally {
-      setUpdatingItems(prev => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
-      });
-    }
+    guestCartService.updateQuantity(productId, newQuantity);
+    loadGuestCart();
   };
 
-  const removeItem = async (itemId: string) => {
+  const removeItem = (productId: string) => {
     if (!confirm('Remove this item from cart?')) return;
-    
-    setUpdatingItems(prev => new Set(prev).add(itemId));
-    
-    try {
-      const res = await fetch(`/api/cart/${itemId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to remove item');
-      }
-      
-      setCartItems(prev => prev.filter(item => item.id !== itemId));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove item');
-      setUpdatingItems(prev => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
-      });
-    }
+    guestCartService.removeItem(productId);
+    loadGuestCart();
   };
 
-  const placeOrder = async () => {
-    if (cartItems.length === 0) return;
-    
-    setPlacingOrder(true);
-    
-    try {
-      const items = cartItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-      }));
-      
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to place order');
-      }
-      
-      const order = await res.json();
-      router.push(`/checkout/${order.id}`);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to place order');
-      setPlacingOrder(false);
-    }
-  };
-
-  const calculateSubtotal = (item: CartItem) => {
+  const calculateSubtotal = (item: GuestCartItemWithProduct) => {
+    if (!item.product) return 0;
     return Number(item.product.price) * item.quantity;
   };
 
@@ -167,12 +109,6 @@ export default function CartPage() {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
-        <button
-          onClick={fetchCart}
-          className="mt-4 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          Retry
-        </button>
       </div>
     );
   }
@@ -197,18 +133,49 @@ export default function CartPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+
+      {/* Guest user notice */}
+      <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-6">
+        <p className="font-medium">Sign in to checkout</p>
+        <p className="text-sm mt-1">
+          Your items are saved locally. Sign in to complete your purchase.
+        </p>
+        <div className="mt-3 flex gap-3">
+          <button
+            onClick={() => router.push('/login?callbackUrl=/cart')}
+            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => router.push('/register?callbackUrl=/cart')}
+            className="border border-blue-600 text-blue-600 py-2 px-4 rounded hover:bg-blue-50 text-sm"
+          >
+            Create Account
+          </button>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="space-y-4">
             {cartItems.map((item) => {
-              const isUpdating = updatingItems.has(item.id);
-              
+              if (!item.product) {
+                return (
+                  <div key={item.productId} className="border rounded-lg p-4 shadow-sm bg-gray-50">
+                    <p className="text-gray-500">Product not found</p>
+                    <button
+                      onClick={() => removeItem(item.productId)}
+                      className="text-red-600 hover:text-red-800 text-sm mt-2"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              }
+
               return (
-                <div
-                  key={item.id}
-                  className="border rounded-lg p-4 shadow-sm"
-                >
+                <div key={item.productId} className="border rounded-lg p-4 shadow-sm">
                   <div className="flex gap-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold mb-1">
@@ -230,8 +197,8 @@ export default function CartPage() {
                     <div className="flex flex-col items-end justify-between">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={isUpdating || item.quantity <= 1}
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
                           className="w-8 h-8 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           -
@@ -240,8 +207,8 @@ export default function CartPage() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          disabled={isUpdating || item.quantity >= item.product.stock}
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          disabled={item.quantity >= item.product.stock}
                           className="w-8 h-8 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           +
@@ -256,9 +223,8 @@ export default function CartPage() {
                       </div>
                       
                       <button
-                        onClick={() => removeItem(item.id)}
-                        disabled={isUpdating}
-                        className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
+                        onClick={() => removeItem(item.productId)}
+                        className="text-red-600 hover:text-red-800 text-sm"
                       >
                         Remove
                       </button>
@@ -291,11 +257,10 @@ export default function CartPage() {
             </div>
             
             <button
-              onClick={placeOrder}
-              disabled={placingOrder || cartItems.length === 0}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              onClick={() => router.push('/login?callbackUrl=/cart')}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-semibold"
             >
-              {placingOrder ? 'Placing Order...' : 'Place Order'}
+              Sign In to Checkout
             </button>
             
             <button

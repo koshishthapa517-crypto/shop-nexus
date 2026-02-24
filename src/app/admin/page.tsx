@@ -84,15 +84,15 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-        <p className="text-gray-500">Loading dashboard...</p>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Dashboard</h1>
+        <p className="text-gray-700 font-medium">Loading dashboard...</p>
       </div>
     );
   }
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900">Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((card) => {
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-500 text-sm font-medium mb-1">
+                  <p className="text-gray-700 text-sm font-semibold mb-1">
                     {card.title}
                   </p>
                   <p className="text-3xl font-bold text-gray-900">
@@ -123,23 +123,23 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
           <div className="space-y-3">
             <Link
               href="/admin/products/new"
-              className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 text-center font-medium"
+              className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 text-center font-extrabold text-base"
             >
               Create New Product
             </Link>
             <Link
               href="/admin/products"
-              className="block w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 text-center font-medium"
+              className="block w-full bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 text-center font-extrabold text-base"
             >
               Manage Products
             </Link>
             <Link
               href="/admin/orders"
-              className="block w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 text-center font-medium"
+              className="block w-full bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 text-center font-extrabold text-base"
             >
               View All Orders
             </Link>
@@ -147,24 +147,24 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-4">System Overview</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">System Overview</h2>
           <div className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-gray-600">Active Products</span>
-              <span className="font-semibold">{stats.totalProducts}</span>
+              <span className="text-gray-800 font-semibold">Active Products</span>
+              <span className="font-bold text-gray-900">{stats.totalProducts}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-gray-600">Completed Orders</span>
-              <span className="font-semibold">{stats.totalOrders - stats.pendingOrders}</span>
+              <span className="text-gray-800 font-semibold">Completed Orders</span>
+              <span className="font-bold text-gray-900">{stats.totalOrders - stats.pendingOrders}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-gray-600">Pending Orders</span>
-              <span className="font-semibold text-yellow-600">{stats.pendingOrders}</span>
+              <span className="text-gray-800 font-semibold">Pending Orders</span>
+              <span className="font-bold text-yellow-600">{stats.pendingOrders}</span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Average Order Value</span>
-              <span className="font-semibold text-green-600">
-                ${stats.totalOrders > 0 ? (stats.totalRevenue / stats.totalOrders).toFixed(2) : '0.00'}
+              <span className="text-gray-800 font-semibold">Average Order Value</span>
+              <span className="font-bold text-green-600">
+                Rs. {stats.totalOrders > 0 ? (stats.totalRevenue / stats.totalOrders).toFixed(2) : '0.00'}
               </span>
             </div>
           </div>

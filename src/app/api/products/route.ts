@@ -5,15 +5,6 @@ import { productService } from '@/core/services/product.service';
 import { createProductSchema } from '@/core/schemas/product.schema';
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json(
-      { error: 'Unauthorized', message: 'Authentication required' },
-      { status: 401 }
-    );
-  }
-
   try {
     const products = await productService.getAllProducts();
     return NextResponse.json(products, { status: 200 });

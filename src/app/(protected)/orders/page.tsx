@@ -24,7 +24,8 @@ interface Order {
   id: string;
   userId: string;
   totalAmount: number;
-  status: 'PENDING' | 'PAID';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  paymentStatus: string;
   createdAt: string;
   items: OrderItem[];
 }
@@ -48,6 +49,38 @@ async function getOrders(): Promise<Order[]> {
   }
 
   return res.json();
+}
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case 'PENDING':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'PROCESSING':
+      return 'bg-blue-100 text-blue-800';
+    case 'SHIPPED':
+      return 'bg-purple-100 text-purple-800';
+    case 'DELIVERED':
+      return 'bg-green-100 text-green-800';
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getPaymentStatusColor(status: string) {
+  switch (status) {
+    case 'paid':
+      return 'bg-green-100 text-green-800';
+    case 'unpaid':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'failed':
+      return 'bg-red-100 text-red-800';
+    case 'refunded':
+      return 'bg-gray-100 text-gray-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
 }
 
 export default async function OrdersPage() {
@@ -94,19 +127,18 @@ export default async function OrdersPage() {
                   <div className="text-right">
                     <p className="text-sm text-gray-500">Total</p>
                     <p className="text-xl font-bold text-green-600">
-                      ${Number(order.totalAmount).toFixed(2)}
+                      Rs. {Number(order.totalAmount).toFixed(2)}
                     </p>
                   </div>
                   
-                  <span
-                    className={`px-3 py-1 rounded text-sm font-medium ${
-                      order.status === 'PAID'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                  >
-                    {order.status}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold text-center ${getPaymentStatusColor(order.paymentStatus)}`}>
+                      {order.paymentStatus.toUpperCase()}
+                    </span>
+                    <span className={`px-3 py-1 rounded text-sm font-semibold text-center ${getStatusColor(order.status)}`}>
+                      {order.status}
+                    </span>
+                  </div>
                 </div>
               </div>
               
@@ -133,10 +165,18 @@ export default async function OrdersPage() {
               
               <Link
                 href={`/orders/${order.id}`}
-                className="inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm"
+                className="inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm mr-2"
               >
                 View Details
               </Link>
+              {order.paymentStatus === 'unpaid' && (
+                <Link
+                  href={`/checkout/${order.id}`}
+                  className="inline-block bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 text-sm"
+                >
+                  Pay Now
+                </Link>
+              )}
             </div>
           ))}
         </div>

@@ -109,8 +109,8 @@ export default function EditProductPage() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-8">Edit Product</h1>
-        <p className="text-gray-500">Loading product...</p>
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Edit Product</h1>
+        <p className="text-gray-800 font-semibold">Loading product...</p>
       </div>
     );
   }
@@ -118,8 +118,8 @@ export default function EditProductPage() {
   if (generalError && !formData.name) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-8">Edit Product</h1>
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Edit Product</h1>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 font-semibold">
           {generalError}
         </div>
         <Link
@@ -141,7 +141,7 @@ export default function EditProductPage() {
         >
           ← Back to Products
         </Link>
-        <h1 className="text-3xl font-bold">Edit Product</h1>
+        <h1 className="text-3xl font-extrabold text-gray-900">Edit Product</h1>
       </div>
 
       {generalError && (
@@ -152,7 +152,7 @@ export default function EditProductPage() {
 
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
         <div className="mb-6">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="name" className="block text-sm font-bold text-gray-900 mb-2">
             Product Name *
           </label>
           <input
@@ -160,7 +160,7 @@ export default function EditProductPage() {
             id="name"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-gray-900 ${
               errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -171,7 +171,7 @@ export default function EditProductPage() {
         </div>
 
         <div className="mb-6">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="description" className="block text-sm font-bold text-gray-900 mb-2">
             Description *
           </label>
           <textarea
@@ -179,7 +179,7 @@ export default function EditProductPage() {
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
             rows={4}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-gray-900 ${
               errors.description ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -191,8 +191,8 @@ export default function EditProductPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-              Price ($) *
+            <label htmlFor="price" className="block text-sm font-bold text-gray-900 mb-2">
+              Price (Rs.) *
             </label>
             <input
               type="number"
@@ -201,7 +201,7 @@ export default function EditProductPage() {
               onChange={(e) => handleChange('price', e.target.value)}
               step="0.01"
               min="0"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-gray-900 ${
                 errors.price ? 'border-red-500' : 'border-gray-300'
               }`}
               required
@@ -212,7 +212,7 @@ export default function EditProductPage() {
           </div>
 
           <div>
-            <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="stock" className="block text-sm font-bold text-gray-900 mb-2">
               Stock *
             </label>
             <input
@@ -221,7 +221,7 @@ export default function EditProductPage() {
               value={formData.stock}
               onChange={(e) => handleChange('stock', e.target.value)}
               min="0"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-gray-900 ${
                 errors.stock ? 'border-red-500' : 'border-gray-300'
               }`}
               required
@@ -242,7 +242,7 @@ export default function EditProductPage() {
           </button>
           <Link
             href="/admin/products"
-            className="flex-1 text-center border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50"
+            className="flex-1 text-center border border-gray-300 text-gray-900 py-2 px-4 rounded-lg hover:bg-gray-50 font-semibold"
           >
             Cancel
           </Link>

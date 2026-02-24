@@ -30,7 +30,8 @@ interface Order {
   id: string;
   userId: string;
   totalAmount: number;
-  status: 'PENDING' | 'PAID';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  paymentStatus: string;
   createdAt: string;
   items: OrderItem[];
   user?: User;
@@ -65,7 +66,7 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: 'PENDING' | 'PAID') => {
+  const handleStatusChange = async (orderId: string, newStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED') => {
     setUpdatingOrderId(orderId);
     
     try {
@@ -91,11 +92,43 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'PROCESSING':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'SHIPPED':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'DELIVERED':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'unpaid':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'refunded':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-bold mb-8">Orders Management</h1>
-        <p className="text-gray-500">Loading orders...</p>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Orders Management</h1>
+        <p className="text-gray-700 font-medium">Loading orders...</p>
       </div>
     );
   }
@@ -103,7 +136,7 @@ export default function AdminOrdersPage() {
   if (error) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-bold mb-8">Orders Management</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Orders Management</h1>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -119,11 +152,11 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Orders Management</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900">Orders Management</h1>
       
       {orders.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No orders found</p>
+          <p className="text-gray-700 text-lg font-medium">No orders found</p>
         </div>
       ) : (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -144,7 +177,10 @@ export default function AdminOrdersPage() {
                     Total
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Payment
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Items
@@ -166,22 +202,22 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 font-semibold">
                           {order.user?.name || 'Unknown'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-700 font-medium">
                           {order.user?.email || order.userId.slice(0, 8)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 font-semibold">
                           {new Date(order.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',
                           })}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-700 font-medium">
                           {new Date(order.createdAt).toLocaleTimeString('en-US', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -190,31 +226,37 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-green-600">
-                          ${Number(order.totalAmount).toFixed(2)}
+                          Rs. {Number(order.totalAmount).toFixed(2)}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded ${getPaymentStatusColor(order.paymentStatus)}`}>
+                          {order.paymentStatus.toUpperCase()}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select
                           value={order.status}
                           onChange={(e) =>
-                            handleStatusChange(order.id, e.target.value as 'PENDING' | 'PAID')
+                            handleStatusChange(order.id, e.target.value as any)
                           }
                           disabled={isUpdating}
-                          className={`text-sm font-medium px-3 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            order.status === 'PAID'
-                              ? 'bg-green-100 text-green-800 border-green-300'
-                              : 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                          } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          className={`text-sm font-semibold px-3 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${getStatusColor(order.status)} ${
+                            isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                          }`}
                         >
                           <option value="PENDING">PENDING</option>
-                          <option value="PAID">PAID</option>
+                          <option value="PROCESSING">PROCESSING</option>
+                          <option value="SHIPPED">SHIPPED</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                          <option value="CANCELLED">CANCELLED</option>
                         </select>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 font-semibold">
                           {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
                         </div>
-                        <div className="text-sm text-gray-500 max-w-xs truncate">
+                        <div className="text-sm text-gray-700 max-w-xs truncate font-medium">
                           {order.items.map(item => item.product.name).join(', ')}
                         </div>
                       </td>

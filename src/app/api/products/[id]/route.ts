@@ -9,14 +9,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json(
-      { error: 'Unauthorized', message: 'Authentication required' },
-      { status: 401 }
-    );
-  }
 
   try {
     const product = await productService.getProductById(id);

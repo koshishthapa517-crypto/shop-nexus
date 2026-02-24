@@ -143,7 +143,7 @@ export const orderService = {
     });
   },
 
-  async updateOrderStatus(id: string, status: 'PENDING' | 'PAID') {
+  async updateOrderStatus(id: string, status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED') {
     return await prisma.order.update({
       where: { id },
       data: { status },

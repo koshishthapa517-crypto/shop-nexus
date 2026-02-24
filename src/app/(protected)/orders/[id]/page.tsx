@@ -24,7 +24,8 @@ interface Order {
   id: string;
   userId: string;
   totalAmount: number;
-  status: 'PENDING' | 'PAID';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  paymentStatus: string;
   createdAt: string;
   items: OrderItem[];
 }
@@ -68,6 +69,38 @@ export default async function OrderDetailPage({
     return Number(item.price) * item.quantity;
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'PROCESSING':
+        return 'bg-blue-100 text-blue-800';
+      case 'SHIPPED':
+        return 'bg-purple-100 text-purple-800';
+      case 'DELIVERED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'unpaid':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'refunded':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -98,15 +131,14 @@ export default async function OrderDetailPage({
             </div>
             
             <div className="mt-4 md:mt-0">
-              <span
-                className={`px-4 py-2 rounded text-sm font-medium ${
-                  order.status === 'PAID'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}
-              >
-                {order.status}
-              </span>
+              <div className="flex gap-2">
+                <span className={`px-3 py-1 rounded text-xs font-semibold ${getPaymentStatusColor(order.paymentStatus)}`}>
+                  {order.paymentStatus.toUpperCase()}
+                </span>
+                <span className={`px-4 py-2 rounded text-sm font-semibold ${getStatusColor(order.status)}`}>
+                  {order.status}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -130,7 +162,7 @@ export default async function OrderDetailPage({
                         Quantity: <span className="font-medium">{item.quantity}</span>
                       </span>
                       <span className="text-gray-600">
-                        Price: <span className="font-medium">${Number(item.price).toFixed(2)}</span>
+                        Price: <span className="font-medium">Rs. {Number(item.price).toFixed(2)}</span>
                       </span>
                     </div>
                   </div>
@@ -138,7 +170,7 @@ export default async function OrderDetailPage({
                   <div className="text-right">
                     <p className="text-sm text-gray-500 mb-1">Subtotal</p>
                     <p className="text-lg font-bold">
-                      ${calculateItemSubtotal(item).toFixed(2)}
+                      Rs. {calculateItemSubtotal(item).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -156,12 +188,20 @@ export default async function OrderDetailPage({
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold">Order Total</span>
               <span className="text-3xl font-bold text-green-600">
-                ${Number(order.totalAmount).toFixed(2)}
+                Rs. {Number(order.totalAmount).toFixed(2)}
               </span>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t">
+            {order.paymentStatus === 'unpaid' && (
+              <Link
+                href={`/checkout/${order.id}`}
+                className="inline-block bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700 mr-4"
+              >
+                Pay Now
+              </Link>
+            )}
             <Link
               href="/products"
               className="inline-block bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"

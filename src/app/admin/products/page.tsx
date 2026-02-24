@@ -70,8 +70,8 @@ export default function AdminProductsPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-bold mb-8">Products Management</h1>
-        <p className="text-gray-500">Loading products...</p>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Products Management</h1>
+        <p className="text-gray-700 font-medium">Loading products...</p>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export default function AdminProductsPage() {
   if (error) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-bold mb-8">Products Management</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Products Management</h1>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -96,7 +96,7 @@ export default function AdminProductsPage() {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Products Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
         <Link
           href="/admin/products/new"
           className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700 font-semibold"
@@ -107,7 +107,7 @@ export default function AdminProductsPage() {
       
       {products.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg mb-4">No products found</p>
+          <p className="text-gray-700 text-lg font-medium mb-4">No products found</p>
           <Link
             href="/admin/products/new"
             className="inline-block bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700"
@@ -120,19 +120,19 @@ export default function AdminProductsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
                   Description
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
                   Price
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
                   Stock
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-bold text-gray-800 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -146,17 +146,17 @@ export default function AdminProductsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600 line-clamp-2 max-w-md">
+                    <div className="text-sm text-gray-800 line-clamp-2 max-w-md font-medium">
                       {product.description}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-green-600">
-                      ${Number(product.price).toFixed(2)}
+                      Rs. {Number(product.price).toFixed(2)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-gray-900 font-semibold">
                       {product.stock}
                     </div>
                   </td>

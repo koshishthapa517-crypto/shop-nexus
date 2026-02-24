@@ -135,6 +135,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   description: 'description',
   price: 'price',
   stock: 'stock',
+  image: 'image',
   createdAt: 'createdAt'
 };
 
@@ -143,7 +144,12 @@ exports.Prisma.OrderScalarFieldEnum = {
   userId: 'userId',
   totalAmount: 'totalAmount',
   status: 'status',
-  createdAt: 'createdAt'
+  paymentStatus: 'paymentStatus',
+  paymentIntentId: 'paymentIntentId',
+  paymentMethod: 'paymentMethod',
+  shippingAddress: 'shippingAddress',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.OrderItemScalarFieldEnum = {
@@ -171,6 +177,11 @@ exports.Prisma.QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 };
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
 exports.Role = exports.$Enums.Role = {
   USER: 'USER',
   ADMIN: 'ADMIN'
@@ -178,7 +189,10 @@ exports.Role = exports.$Enums.Role = {
 
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   PENDING: 'PENDING',
-  PAID: 'PAID'
+  PROCESSING: 'PROCESSING',
+  SHIPPED: 'SHIPPED',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED'
 };
 
 exports.Prisma.ModelName = {

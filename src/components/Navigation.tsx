@@ -2,82 +2,100 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import { Bell, ShoppingCart } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Navigation() {
   const { data: session, status } = useSession();
   const isLoading = status === 'loading';
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/products?search=${encodeURIComponent(searchQuery)}`;
+    } else {
+      window.location.href = '/products';
+    }
+  };
 
   return (
-    <nav className="border-b border-gray-200 bg-white">
+    <nav className="bg-white shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
-          <div className="flex">
-            <div className="flex flex-shrink-0 items-center">
-              <Link href="/" className="text-xl font-bold text-blue-600">
-                ShopNexus
-              </Link>
-            </div>
-            {session && (
-              <div className="ml-6 flex space-x-8">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-900 hover:border-gray-300"
-                >
-                  Products
-                </Link>
-                <Link
-                  href="/cart"
-                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-900 hover:border-gray-300"
-                >
-                  Cart
-                </Link>
-                <Link
-                  href="/orders"
-                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-900 hover:border-gray-300"
-                >
-                  Orders
-                </Link>
-                {session.user.role === 'ADMIN' && (
-                  <Link
-                    href="/admin"
-                    className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-900 hover:border-gray-300"
-                  >
-                    Admin
-                  </Link>
-                )}
-              </div>
-            )}
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="text-2xl font-bold text-gray-900">
+            ShopNexus
+          </Link>
+
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/" className="text-gray-900 hover:text-black font-medium">
+              Home
+            </Link>
+            <Link href="/products" className="text-gray-900 hover:text-black font-medium">
+              Products
+            </Link>
+            <Link href="/about" className="text-gray-900 hover:text-black font-medium">
+              About
+            </Link>
+            <Link href="/contact" className="text-gray-900 hover:text-black font-medium">
+              Contact
+            </Link>
           </div>
-          <div className="flex items-center">
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="hidden lg:flex items-center">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-64 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-gray-900"
+            />
+            <button
+              type="submit"
+              className="bg-black text-white px-6 py-2 rounded-r-md hover:bg-gray-800 font-medium"
+            >
+              Search
+            </button>
+          </form>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-4">
             {isLoading ? (
               <div className="text-sm text-gray-500">Loading...</div>
             ) : session ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
-                  {session.user.name}
-                </span>
+              <>
+                <button className="text-gray-900 hover:text-black">
+                  <Bell size={20} />
+                </button>
+                <Link href="/cart" className="text-gray-900 hover:text-black">
+                  <ShoppingCart size={20} />
+                </Link>
+                <span className="text-sm text-gray-900">{session.user.name}</span>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/login' })}
-                  className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="text-sm font-medium text-gray-900 hover:text-black"
                 >
                   Sign out
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center space-x-4">
+              <>
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-gray-900 hover:text-black border border-gray-300 rounded-md"
                 >
-                  Sign in
+                  Log In
                 </Link>
                 <Link
                   href="/register"
-                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
                 >
-                  Register
+                  Sign Up
                 </Link>
-              </div>
+              </>
             )}
           </div>
         </div>
