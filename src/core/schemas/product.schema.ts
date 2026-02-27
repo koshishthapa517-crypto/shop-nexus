@@ -5,6 +5,7 @@ export const createProductSchema = z.object({
   description: z.string(),
   price: z.number().positive('Price must be a positive number'),
   stock: z.number().int().nonnegative('Stock must be a non-negative integer'),
+  image: z.string().url().optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

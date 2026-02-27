@@ -1,7 +1,9 @@
+'use client';
+
 import Link from 'next/link';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/core/lib/auth';
-import { redirect } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -28,27 +30,6 @@ interface Order {
   paymentStatus: string;
   createdAt: string;
   items: OrderItem[];
-}
-
-async function getOrders(): Promise<Order[]> {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    redirect('/login');
-  }
-
-  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/orders`, {
-    cache: 'no-store',
-    headers: {
-      Cookie: `next-auth.session-token=${session}`,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch orders');
-  }
-
-  return res.json();
 }
 
 function getStatusColor(status: string) {
@@ -83,8 +64,62 @@ function getPaymentStatusColor(status: string) {
   }
 }
 
-export default async function OrdersPage() {
-  const orders = await getOrders();
+export default function OrdersPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+
+    if (status === 'authenticated') {
+      fetchOrders();
+    }
+  }, [status, router]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch('/api/orders');
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || status === 'loading') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+        <p className="text-gray-600">Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -92,7 +127,7 @@ export default async function OrdersPage() {
       
       {orders.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg mb-4">You haven't placed any orders yet</p>
+          <p className="text-gray-500 text-lg mb-4">You haven&apos;t placed any orders yet</p>
           <Link
             href="/products"
             className="inline-block bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"

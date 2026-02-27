@@ -1,13 +1,63 @@
+'use client';
+
 import Link from 'next/link';
 import { Star, Shield, Zap, MessageCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      // Redirect based on user role
+      if (session.user.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/products');
+      }
+    }
+  }, [status, session, router]);
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
+
+  // If authenticated, show loading while redirecting
+  if (status === 'authenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Redirecting...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-32 px-4">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="relative max-w-4xl mx-auto text-center">
+      {/* Hero Section with Background Image */}
+      <section className="relative overflow-hidden text-white py-32 px-4 min-h-[600px]">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          {/* Clothing Image */}
+          <img 
+            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&h=1080&fit=crop&q=80" 
+            alt="Clothing"
+            className="w-full h-full object-cover"
+          />
+          
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black/60 z-10"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-20 max-w-4xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Welcome to ShopNexus
           </h1>

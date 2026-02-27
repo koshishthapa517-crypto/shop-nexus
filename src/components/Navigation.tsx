@@ -2,8 +2,8 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { Bell, ShoppingCart } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ShoppingCart, User, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { guestCartService } from '@/core/lib/guestCart';
 
 export default function Navigation() {
@@ -11,6 +11,8 @@ export default function Navigation() {
   const isLoading = status === 'loading';
   const [searchQuery, setSearchQuery] = useState('');
   const [cartCount, setCartCount] = useState(0);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Update cart count
@@ -44,6 +46,18 @@ export default function Navigation() {
       window.removeEventListener('cartUpdated', handleCartUpdate);
     };
   }, [session]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,9 +116,6 @@ export default function Navigation() {
               <div className="text-sm text-gray-500">Loading...</div>
             ) : session ? (
               <>
-                <button className="text-gray-900 hover:text-black">
-                  <Bell size={20} />
-                </button>
                 <Link href="/cart" className="text-gray-900 hover:text-black relative">
                   <ShoppingCart size={20} />
                   {cartCount > 0 && (
@@ -113,13 +124,86 @@ export default function Navigation() {
                     </span>
                   )}
                 </Link>
-                <span className="text-sm text-gray-900">{session.user.name}</span>
-                <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="text-sm font-medium text-gray-900 hover:text-black"
-                >
-                  Sign out
-                </button>
+                
+                {/* Profile Dropdown */}
+                <div className="relative" ref={profileRef}>
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center space-x-2 text-gray-900 hover:text-black focus:outline-none"
+                  >
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <User size={18} className="text-white" />
+                    </div>
+                    <span className="text-sm font-medium">{session.user.name}</span>
+                    <ChevronDown size={16} className={`transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-2 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                        <p className="text-xs text-gray-600">{session.user.email}</p>
+                        <p className="text-xs text-blue-600 font-medium mt-1">
+                          {session.user.role === 'ADMIN' ? 'Administrator' : 'Customer'}
+                        </p>
+                      </div>
+                      
+                      {session.user.role === 'ADMIN' && (
+                        <>
+                          <Link
+                            href="/admin"
+                            className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            Admin Dashboard
+                          </Link>
+                          <Link
+                            href="/admin/products"
+                            className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            Manage Products
+                          </Link>
+                          <Link
+                            href="/admin/orders"
+                            className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            Manage Orders
+                          </Link>
+                          <div className="border-t border-gray-200 my-2"></div>
+                        </>
+                      )}
+                      
+                      <Link
+                        href="/orders"
+                        className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        My Orders
+                      </Link>
+                      <Link
+                        href="/cart"
+                        className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        My Cart
+                      </Link>
+                      
+                      <div className="border-t border-gray-200 my-2"></div>
+                      
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          signOut({ callbackUrl: '/' });
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>

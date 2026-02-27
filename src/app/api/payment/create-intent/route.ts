@@ -24,9 +24,22 @@ export async function POST(request: NextRequest) {
   try {
     const { orderId, amount } = await request.json();
 
+    console.log('Creating payment intent:', { orderId, amount, type: typeof amount });
+
     if (!orderId || !amount) {
       return NextResponse.json(
         { error: 'Bad Request', message: 'Order ID and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    // Convert amount to number if it's a string
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+    
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      console.error('Invalid amount:', amount, 'converted to:', numericAmount);
+      return NextResponse.json(
+        { error: 'Bad Request', message: 'Invalid amount' },
         { status: 400 }
       );
     }
@@ -50,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to smallest currency unit (paise for INR)
+      amount: Math.round(numericAmount * 100), // Convert to smallest currency unit (paise for INR)
       currency: 'inr',
       metadata: {
         orderId,
@@ -68,7 +81,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Payment intent creation error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to create payment intent' },
+      { error: 'Internal Server Error', message: error instanceof Error ? error.message : 'Failed to create payment intent' },
       { status: 500 }
     );
   }

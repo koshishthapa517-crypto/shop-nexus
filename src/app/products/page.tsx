@@ -20,11 +20,12 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('newest');
-  const [category, setCategory] = useState('all');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [minRating, setMinRating] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState('');
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -37,9 +38,24 @@ export default function ProductsPage() {
     }
   }, []);
 
+  // Debounce price inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMinPrice(minPrice);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [minPrice]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMaxPrice(maxPrice);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [maxPrice]);
+
   useEffect(() => {
     applyFiltersAndSearch();
-  }, [products, searchQuery]);
+  }, [products, searchQuery, sortBy, debouncedMinPrice, debouncedMaxPrice, minRating]);
 
   const fetchProducts = async () => {
     try {
@@ -72,11 +88,27 @@ export default function ProductsPage() {
     }
 
     // Filter by price
-    if (minPrice) {
-      filtered = filtered.filter(p => Number(p.price) >= Number(minPrice));
+    if (debouncedMinPrice && debouncedMinPrice.trim() !== '' && !isNaN(Number(debouncedMinPrice))) {
+      const minPriceNum = parseFloat(debouncedMinPrice);
+      filtered = filtered.filter(p => {
+        const productPrice = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
+        return productPrice >= minPriceNum;
+      });
     }
-    if (maxPrice) {
-      filtered = filtered.filter(p => Number(p.price) <= Number(maxPrice));
+    if (debouncedMaxPrice && debouncedMaxPrice.trim() !== '' && !isNaN(Number(debouncedMaxPrice))) {
+      const maxPriceNum = parseFloat(debouncedMaxPrice);
+      filtered = filtered.filter(p => {
+        const productPrice = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
+        return productPrice <= maxPriceNum;
+      });
+    }
+
+    // Filter by rating
+    if (minRating !== 'all') {
+      filtered = filtered.filter(p => {
+        const rating = parseFloat(getProductRating(p.id));
+        return rating >= Number(minRating);
+      });
     }
 
     // Sort
@@ -86,19 +118,18 @@ export default function ProductsPage() {
       filtered.sort((a, b) => Number(b.price) - Number(a.price));
     } else if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    } else if (sortBy === 'rating') {
+      filtered.sort((a, b) => parseFloat(getProductRating(b.id)) - parseFloat(getProductRating(a.id)));
     }
 
     setFilteredProducts(filtered);
   };
 
-  const handleApplyFilters = () => {
-    applyFiltersAndSearch();
-  };
-
   const handleResetFilters = () => {
-    setCategory('all');
     setMinPrice('');
     setMaxPrice('');
+    setDebouncedMinPrice('');
+    setDebouncedMaxPrice('');
     setMinRating('all');
     setSortBy('newest');
     setSearchQuery('');
@@ -109,12 +140,16 @@ export default function ProductsPage() {
     setFilteredProducts(products);
   };
 
-  const getProductRating = () => {
-    return (Math.random() * 2 + 3).toFixed(1);
+  const getProductRating = (productId: string) => {
+    // Generate consistent rating based on product ID
+    const hash = productId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return ((hash % 20) / 10 + 3).toFixed(1); // Range: 3.0 - 4.9
   };
 
-  const getProductReviews = () => {
-    return Math.floor(Math.random() * 1000 + 100);
+  const getProductReviews = (productId: string) => {
+    // Generate consistent review count based on product ID
+    const hash = productId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return Math.floor((hash % 900) + 100); // Range: 100 - 999
   };
 
   // Product images - realistic product photos
@@ -180,23 +215,6 @@ export default function ProductsPage() {
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
               <h2 className="text-base font-bold mb-6 text-gray-900">Filters</h2>
 
-              {/* Category Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Category
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                >
-                  <option value="all">All Categories</option>
-                  <option value="clothing">Clothing</option>
-                  <option value="shoes">Shoes</option>
-                  <option value="accessories">Accessories</option>
-                </select>
-              </div>
-
               {/* Min Price */}
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -225,10 +243,10 @@ export default function ProductsPage() {
                 />
               </div>
 
-              {/* Min Rating */}
+              {/* Rating */}
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Min Rating
+                  Rating
                 </label>
                 <select
                   value={minRating}
@@ -243,18 +261,12 @@ export default function ProductsPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleApplyFilters}
-                  className="flex-1 bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 font-medium text-sm"
-                >
-                  Apply Filters
-                </button>
+              <div>
                 <button
                   onClick={handleResetFilters}
-                  className="flex-1 bg-gray-200 text-gray-800 py-2.5 px-4 rounded-md hover:bg-gray-300 font-medium text-sm"
+                  className="w-full bg-gray-200 text-gray-800 py-2.5 px-4 rounded-md hover:bg-gray-300 font-medium text-sm"
                 >
-                  Reset
+                  Reset Filters
                 </button>
               </div>
             </div>
@@ -286,8 +298,14 @@ export default function ProductsPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {filteredProducts.map((product, index) => {
-                  const rating = getProductRating();
-                  const reviews = getProductReviews();
+                  const rating = getProductRating(product.id);
+                  const reviews = getProductReviews(product.id);
+                  const imageUrl = product.image || getProductImage(index);
+                  
+                  // Debug: log image URL
+                  if (product.image) {
+                    console.log(`Product ${product.name} image:`, product.image);
+                  }
                   
                   return (
                     <div
@@ -297,10 +315,11 @@ export default function ProductsPage() {
                       <Link href={`/products/${product.id}`}>
                         <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
                           <img 
-                            src={product.image || getProductImage(index)}
+                            src={imageUrl}
                             alt={product.name}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
+                              console.error(`Failed to load image for ${product.name}:`, imageUrl);
                               const target = e.currentTarget;
                               target.src = getProductImage(index);
                             }}
