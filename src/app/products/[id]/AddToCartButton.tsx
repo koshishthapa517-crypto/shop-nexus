@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { guestCartService } from '@/core/lib/guestCart';
 
 interface AddToCartButtonProps {
   productId: string;
@@ -19,20 +18,17 @@ export default function AddToCartButton({ productId, isOutOfStock }: AddToCartBu
   const [success, setSuccess] = useState(false);
 
   const handleAddToCart = async () => {
+    // Require authentication to add to cart
+    if (!session) {
+      router.push('/login?callbackUrl=' + encodeURIComponent(window.location.pathname));
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
 
     try {
-      if (!session) {
-        // Add to guest cart (localStorage)
-        guestCartService.addItem(productId, quantity);
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 2000);
-        setLoading(false);
-        return;
-      }
-
       // Add to database cart for authenticated users
       const res = await fetch('/api/cart', {
         method: 'POST',
@@ -92,7 +88,7 @@ export default function AddToCartButton({ productId, isOutOfStock }: AddToCartBu
         disabled={isOutOfStock || loading}
         className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold text-lg transition-colors"
       >
-        {loading ? 'Adding...' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+        {loading ? 'Adding...' : isOutOfStock ? 'Out of Stock' : !session ? 'Login to Add to Cart' : 'Add to Cart'}
       </button>
     </div>
   );
